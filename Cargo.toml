@@ -1,0 +1,20 @@
+[package]
+name = "vindicator"
+version = "0.1.0"
+authors = ["Eduardo Pinho <enet4mikeenet@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "vindicator"
+path = "src/lib.rs"
+
+[[bin]]
+name = "vindicator"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+itertools = "0.8.0"
+structopt = "0.2.14"
+smallvec = "0.6.8"
+noisy_float = "0.1.9"
