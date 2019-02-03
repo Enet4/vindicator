@@ -1,23 +1,19 @@
 //! Search manipulation algorithms for multi-source information retrieval.
 use noisy_float::prelude::*;
-use std::collections::HashMap;
-use std::hash::Hash;
-use smallvec::{SmallVec, smallvec};
+
+pub mod fuser;
+pub mod trec;
 
 pub type Score = N32;
 pub type Rank = u32;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct EntryInfo<I> {
-    pub id: I,
-    pub score: Score,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct RankedEntryInfo<I> {
-    pub id: I,
-    pub score: Score,
-    pub rank: Rank,
+/// Create a score value.
+/// 
+/// # Panic
+/// 
+/// Panics if the given value is `NaN`.
+pub fn score(value: f32) -> Score {
+    n32(value)
 }
 
 pub trait SearchEntry {
@@ -35,6 +31,41 @@ pub trait SearchEntry {
             score: self.score(),
         }
     }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct EntryInfo<I> {
+    pub id: I,
+    pub score: Score,
+}
+
+/// Wrapper type for assigning a rank to an arbitrary value.
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct Ranked<T> {
+    pub inner: T,
+    pub rank: Rank,
+}
+
+impl<T> SearchEntry for Ranked<T>
+where
+    T: SearchEntry,
+{
+    type Id = T::Id;
+
+    fn id(&self) -> &Self::Id {
+        self.inner.id()
+    }
+
+    fn score(&self) -> Score {
+        self.inner.score()
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct RankedEntryInfo<I> {
+    pub id: I,
+    pub score: Score,
+    pub rank: Rank,
 }
 
 impl<'a, T: ?Sized> SearchEntry for &'a T
@@ -115,68 +146,13 @@ where
     }
 }
 
-/// CombMAX algorithm
-pub fn comb_max(scores: &[Score]) -> Score {
-    scores.into_iter().cloned().max().unwrap_or(n32(0.))
-}
-
-/// CombSUM algorithm
-pub fn comb_sum(scores: &[Score]) -> Score {
-    scores.into_iter().cloned().sum::<Score>()
-}
-
-/// CombMNZ algorithm
-pub fn comb_mnz(scores: &[Score]) -> Score {
-    n32(scores.len() as f32) * comb_sum(scores)
-}
-
-/// combine multiple lists of results with scores
-pub fn comb_scored_lists<I, L1, L2, R1, R2, F>(
-    results1: L1,
-    results2: L2,
-    fuser: F,
-) -> Vec<EntryInfo<I>>
+fn ranked_list<L, R>(results: L) -> impl Iterator<Item = Ranked<R>>
 where
-    I: Eq + Clone + Hash,
-    L1: IntoIterator<Item = R1>,
-    L2: IntoIterator<Item = R2>,
-    R1: SearchEntry<Id = I>,
-    R2: SearchEntry<Id = I>,
-    F: Fn(&[Score]) -> Score,
-{
-    let results1 = results1.into_iter().map(|x| x.to_entry());
-    let results2 = results2.into_iter().map(|x| x.to_entry());
-
-    comb_scored(Iterator::chain(results1, results2), fuser)
-}
-
-/// combine multiple results with scores
-pub fn comb_scored<I, L, R, F>(results: L, fuser: F) -> Vec<EntryInfo<I>>
-where
-    I: Eq + Clone + Hash,
     L: IntoIterator<Item = R>,
-    R: SearchEntry<Id = I>,
-    F: Fn(&[Score]) -> Score,
+    R: SearchEntry,
 {
-    let mut map: HashMap<I, SmallVec<[_; 4]>> = HashMap::new();
-
-    for r in results {
-        if let Some(v) = map.get_mut(r.id()) {
-            v.push(r.score());
-        } else {
-            map.insert(r.id().clone(), smallvec![r.score()]);
-        }
-    }
-
-    let mut flat: Vec<_> = map
-        .into_iter()
-        .map(|(id, scores)| {
-            // score fusion happens here
-            let score = fuser(&scores);
-            EntryInfo { id, score }
-        })
-        .collect();
-
-    flat.sort_unstable_by_key(|e| -e.score);
-    flat
+    results.into_iter().enumerate().map(|(i, x)| Ranked {
+        inner: x,
+        rank: i as Rank,
+    })
 }

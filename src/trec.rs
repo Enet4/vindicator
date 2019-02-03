@@ -1,13 +1,19 @@
-//! File parsing module
-use vindicator::{Rank, RankedSearchEntry, Score, SearchEntry};
+//! TREC File parsing and printing module
+use crate::{Rank, RankedSearchEntry, Score, SearchEntry};
 use std::fmt;
+use std::io::Write;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct TrecEntry<'a> {
+    /// Query ID
     pub qid: &'a str,
+    /// Document number (unique identifier for a document)
     pub docno: &'a str,
+    /// Rank (position of the document in the list)
     pub rank: Rank,
+    /// Similarity score (higher is more similar)
     pub score: Score,
+    /// Unique run ID. This is currently ignored by the fusion algorithms.
     pub runid: &'a str,
 }
 
@@ -79,7 +85,7 @@ impl std::error::Error for ParseError {}
 
 /// Expected format:
 ///
-/// `qid 0 docno rank sim run_id`
+/// `qid 0 docno rank score run_id`
 pub fn parse_from_trec<'a>(file_data: &'a str) -> Result<Vec<TrecEntry<'a>>, ParseError> {
     file_data
         .lines()
@@ -117,4 +123,29 @@ pub fn parse_from_trec<'a>(file_data: &'a str) -> Result<Vec<TrecEntry<'a>>, Par
             })
         })
         .collect()
+}
+
+
+/// Write a single text line of this TREC result entry.
+/// 
+/// Format: `qid 0 docno rank score run_id` (separated by spaces)
+pub fn write<W>(mut writer: W, entry: TrecEntry) -> Result<(), std::io::Error>
+where
+    W: Write,
+{
+    writeln!(writer, "{} 0 {} {} {} {}", entry.qid, entry.docno, entry.rank, entry.score, entry.runid)
+}
+
+/// Write a list of TREC result entries.
+/// 
+/// Format: `qid 0 docno rank score run_id` (separated by spaces)
+pub fn write_all<'a, I, W>(mut writer: W, list: I) -> Result<(), std::io::Error>
+where
+    I: IntoIterator<Item = TrecEntry<'a>>,
+    W: Write,
+{
+    for e in list {
+        write(&mut writer, e)?;
+    }
+    Ok(())
 }
