@@ -1,8 +1,13 @@
 [package]
 name = "vindicator"
+description = "Search list manipulation framework for multi-source information retrieval"
 version = "0.1.0"
 authors = ["Eduardo Pinho <enet4mikeenet@gmail.com>"]
 edition = "2018"
+repository = "https://github.com/Enet4/vindicator"
+keywords = ["trec"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
 
 [lib]
 name = "vindicator"
