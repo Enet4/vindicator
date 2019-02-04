@@ -3,6 +3,8 @@
 
 A list manipulation framework for multi-source information retrieval.
 
+This is a work in progress, more features and major API changes may happen.
+
 ## Using the command line tool
 
 ```
