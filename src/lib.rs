@@ -2,6 +2,9 @@
 use noisy_float::prelude::*;
 use approx::AbsDiffEq;
 
+pub use noisy_float;
+pub use approx;
+
 pub mod fuser;
 pub mod trec;
 
