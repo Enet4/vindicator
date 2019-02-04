@@ -20,7 +20,7 @@ pub fn comb_mnz(scores: &[Score]) -> Score {
 }
 
 /// combine multiple lists of results with scores
-pub fn comb_scored_lists<I, L1, L2, R1, R2, F>(
+pub fn fuse_scored_lists<I, L1, L2, R1, R2, F>(
     results1: L1,
     results2: L2,
     fuser: F,
@@ -36,12 +36,12 @@ where
     let results1 = results1.into_iter().map(|x| x.to_entry());
     let results2 = results2.into_iter().map(|x| x.to_entry());
 
-    comb_scored(Iterator::chain(results1, results2), fuser)
+    fuse_scored(Iterator::chain(results1, results2), fuser)
 }
 
 /// Combine multiple scored results with an algorithm that does not
 /// depend on the entries' rank.
-pub fn comb_scored<I, L, R, F>(results: L, fuser: F) -> Vec<EntryInfo<I>>
+pub fn fuse_scored<I, L, R, F>(results: L, fuser: F) -> Vec<EntryInfo<I>>
 where
     I: Eq + Clone + Hash,
     L: IntoIterator<Item = R>,
@@ -82,6 +82,23 @@ mod tests {
         assert_eq!(
             comb_max(&[score(1.), score(40.), score(0.5), score(12.)]),
             40.
+        )
+    }
+
+    #[test]
+    fn test_comb_sum() {
+        assert_eq!(
+            comb_sum(&[score(1.), score(40.), score(0.5), score(12.)]),
+            53.5
+        )
+    }
+
+
+    #[test]
+    fn test_comb_mnz() {
+        assert_eq!(
+            comb_mnz(&[score(1.), score(40.), score(0.5), score(12.)]),
+            214.
         )
     }
 }

@@ -1,5 +1,6 @@
 //! Search manipulation algorithms for multi-source information retrieval.
 use noisy_float::prelude::*;
+use approx::AbsDiffEq;
 
 pub mod fuser;
 pub mod trec;
@@ -37,6 +38,26 @@ pub trait SearchEntry {
 pub struct EntryInfo<I> {
     pub id: I,
     pub score: Score,
+}
+
+impl<I> AbsDiffEq for EntryInfo<I>
+where
+    I: PartialEq<I>,
+{
+    type Epsilon = f32;
+
+    fn default_epsilon() -> Self::Epsilon {
+        1e-5
+    }
+    
+    fn abs_diff_eq(
+        &self, 
+        other: &Self, 
+        epsilon: Self::Epsilon, 
+    ) -> bool {
+        self.id == other.id
+            && self.score.raw().abs_diff_eq(&other.score.raw(), epsilon)
+    }
 }
 
 /// Wrapper type for assigning a rank to an arbitrary value.
@@ -146,7 +167,7 @@ where
     }
 }
 
-fn ranked_list<L, R>(results: L) -> impl Iterator<Item = Ranked<R>>
+pub fn ranked_list<L, R>(results: L) -> impl Iterator<Item = Ranked<R>>
 where
     L: IntoIterator<Item = R>,
     R: SearchEntry,

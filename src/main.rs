@@ -39,17 +39,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let list: Vec<_> = entries.into_iter().flatten().collect();
             if let Some(list) = match &*fuser {
                 "combMAX" | "combmax" | "max" => {
-                    Some(fuser::comb_scored(list, fuser::comb_max))
+                    Some(fuser::fuse_scored(list, fuser::comb_max))
                 },
                 "combSUM" | "combsum" | "sum" => {
-                    Some(fuser::comb_scored(list, fuser::comb_sum))
+                    Some(fuser::fuse_scored(list, fuser::comb_sum))
                 },
                 "combMNZ" | "combmnz" | "mnz" => {
-                    Some(fuser::comb_scored(list, fuser::comb_mnz))
+                    Some(fuser::fuse_scored(list, fuser::comb_mnz))
                 },
                 _ => {
                     eprintln!("Unknown fusion algorithm `{}`", fuser);
-                    None
+                    std::process::exit(-2);
                 },
             } {
                 // transform results into new list

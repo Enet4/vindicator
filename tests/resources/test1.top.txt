@@ -1,0 +1,10 @@
+q0	0	doc001	1	1	test1
+q0	0	doc005	2	0.8	test1
+q0	0	doc013	3	0.5	test1
+q0	0	doc025	4	0.4	test1
+q0	0	doc123	5	0.25	test1
+q1	0	doc001	1	1	test1
+q1	0	doc013	2	0.75	test1
+q1	0	doc046	3	0.6	test1
+q1	0	doc025	4	0.4	test1
+q1	0	doc005	5	0.38	test1

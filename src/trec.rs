@@ -73,15 +73,40 @@ impl RankedSearchEntry for TrecEntryOwned {
 }
 
 #[derive(Debug)]
-pub struct ParseError(String);
+pub enum ParseError {
+    /// Unexpected end of line before reading a specific attribute
+    Eol(&'static str),
+    /// Invalid rank value (must be a non-negative integer)
+    InvalidRank(String),
+    /// Invalid score value (must be a non-NaN number)
+    InvalidScore(String),
+    /// Something else happened
+    Other(String),
+}
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "failed to parse: {}", self.0)
+        use ParseError::*;
+        match self {
+            Eol(att) => write!(f, "failed to parse TREC data: unexpected end of line ({})", att),
+            InvalidRank(rank) => write!(f, "failed to parse TREC data: invalid rank `{}`", rank),
+            InvalidScore(score) => write!(f, "failed to parse TREC data: invalid score `{}`", score),
+            Other(s) => write!(f, "failed to parse TREC data: {}", s),
+        }
     }
 }
 
-impl std::error::Error for ParseError {}
+impl std::error::Error for ParseError {
+    fn description(&self) -> &str {
+        use ParseError::*;
+        match *self {
+            Eol(_) => "unexpected end of line",
+            InvalidRank(_) => "invalid rank",
+            InvalidScore(_) => "invalid score",
+            Other(ref s) => s,
+        }
+    }
+}
 
 /// Expected format:
 ///
@@ -93,27 +118,30 @@ pub fn parse_from_trec<'a>(file_data: &'a str) -> Result<Vec<TrecEntry<'a>>, Par
             let mut words = l.split_whitespace();
             let qid = words
                 .next()
-                .ok_or_else(|| ParseError("unexpected end of line (qid)".to_string()))?;
+                .ok_or_else(|| ParseError::Eol("qid"))?;
+            let _0 = words
+                .next()
+                .ok_or_else(|| ParseError::Eol("reserved"))?;
             let docno = words
                 .next()
-                .ok_or_else(|| ParseError("unexpected end of line (docno)".to_string()))?;
+                .ok_or_else(|| ParseError::Eol("docno"))?;
             let rank = words
                 .next()
-                .ok_or_else(|| ParseError("unexpected end of line (rank)".to_string()))?;
+                .ok_or_else(|| ParseError::Eol("rank"))?;
             let rank: u32 = rank
                 .parse()
-                .map_err(|_| ParseError(format!("invalid rank number `{}`", rank)))?;
+                .map_err(|_| ParseError::InvalidRank(rank.to_string()))?;
             let score = words
                 .next()
-                .ok_or_else(|| ParseError("unexpected end of line (score)".to_string()))?;
-            let score: f32 = score
+                .ok_or_else(|| ParseError::Eol("score"))?;
+            let score: Score = score
                 .parse()
-                .map_err(|_| ParseError(format!("invalid rank number `{}`", rank)))?;
-            let score = Score::try_new(score)
-                .ok_or_else(|| ParseError("invalid score value (must not be NaN)".to_string()))?;
+                .map_err(|_| ())
+                .and_then(|s| Score::try_new(s).ok_or(()))
+                .map_err(|_| ParseError::InvalidScore(score.to_string()))?;
             let runid = words
                 .next()
-                .ok_or_else(|| ParseError("unexpected end of line (runid)".to_string()))?;
+                .ok_or_else(|| ParseError::Eol("runid"))?;
             Ok(TrecEntry {
                 qid,
                 docno,

@@ -1,0 +1,6 @@
+multi	0	doc001	1	1	test1
+multi	0	doc005	2	0.8	test1
+multi	0	doc013	3	0.75	test1
+multi	0	doc046  4	0.6	test1
+multi	0	doc025	5	0.4	test1
+multi	0	doc123	6	0.25	test1
