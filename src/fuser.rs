@@ -1,3 +1,5 @@
+//! Late fusion algorithms.
+
 use crate::{Score, SearchEntry, EntryInfo};
 use noisy_float::prelude::*;
 use std::collections::HashMap;
@@ -5,21 +7,31 @@ use std::hash::Hash;
 use smallvec::{SmallVec, smallvec};
 
 /// CombMAX algorithm
+/// 
+/// Returns the highest score.
 pub fn comb_max(scores: &[Score]) -> Score {
     scores.into_iter().cloned().max().unwrap_or(n32(0.))
 }
 
 /// CombSUM algorithm
+/// 
+/// Returns the sum of all scores.
 pub fn comb_sum(scores: &[Score]) -> Score {
     scores.into_iter().cloned().sum::<Score>()
 }
 
 /// CombMNZ algorithm
+/// 
+/// Returns the sum of all scores, multiplied by the number of scores.
 pub fn comb_mnz(scores: &[Score]) -> Score {
     n32(scores.len() as f32) * comb_sum(scores)
 }
 
-/// combine multiple lists of results with scores
+/// Combines two lists of scored results with a score-based fusion algorithm.
+/// Since it's score based, this is equivalent to chaining the
+/// two lists together and calling [`fuse_scored`].
+/// 
+/// [`fuse_scored`]: ./fn.fuse_scored.html
 pub fn fuse_scored_lists<I, L1, L2, R1, R2, F>(
     results1: L1,
     results2: L2,
@@ -39,8 +51,7 @@ where
     fuse_scored(Iterator::chain(results1, results2), fuser)
 }
 
-/// Combine multiple scored results with an algorithm that does not
-/// depend on the entries' rank.
+/// Combines multiple scored results with a score-based fusion algorithm.
 pub fn fuse_scored<I, L, R, F>(results: L, fuser: F) -> Vec<EntryInfo<I>>
 where
     I: Eq + Clone + Hash,
