@@ -74,7 +74,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{SearchEntry, Score, score};
+    use crate::score;
     use super::*;
 
     #[test]
