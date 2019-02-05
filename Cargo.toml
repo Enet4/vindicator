@@ -5,7 +5,8 @@ version = "0.1.0"
 authors = ["Eduardo Pinho <enet4mikeenet@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/Enet4/vindicator"
-keywords = ["trec"]
+keywords = ["trec", "list", "retrieval"]
+categories = ["algorithms", "command-line-utilities", "science"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
 
