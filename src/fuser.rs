@@ -1,27 +1,27 @@
 //! Late fusion algorithms.
 
-use crate::{Score, SearchEntry, EntryInfo};
+use crate::{EntryInfo, Rank, RankedEntryInfo, RankedSearchEntry, Score, SearchEntry};
 use noisy_float::prelude::*;
+use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
 use std::hash::Hash;
-use smallvec::{SmallVec, smallvec};
 
 /// CombMAX algorithm
-/// 
+///
 /// Returns the highest score.
 pub fn comb_max(scores: &[Score]) -> Score {
     scores.into_iter().cloned().max().unwrap_or(n32(0.))
 }
 
 /// CombSUM algorithm
-/// 
+///
 /// Returns the sum of all scores.
 pub fn comb_sum(scores: &[Score]) -> Score {
     scores.into_iter().cloned().sum::<Score>()
 }
 
 /// CombMNZ algorithm
-/// 
+///
 /// Returns the sum of all scores, multiplied by the number of scores.
 pub fn comb_mnz(scores: &[Score]) -> Score {
     n32(scores.len() as f32) * comb_sum(scores)
@@ -30,7 +30,7 @@ pub fn comb_mnz(scores: &[Score]) -> Score {
 /// Combines two lists of scored results with a score-based fusion algorithm.
 /// Since it's score based, this is equivalent to chaining the
 /// two lists together and calling [`fuse_scored`].
-/// 
+///
 /// [`fuse_scored`]: ./fn.fuse_scored.html
 pub fn fuse_scored_lists<I, L1, L2, R1, R2, F>(
     results1: L1,
@@ -82,11 +82,73 @@ where
     flat
 }
 
+/// Combines multiple ranked results with a rank-based fusion algorithm.
+pub fn fuse_ranked<I, L, R, F>(results: L, fuser: F) -> Vec<EntryInfo<I>>
+where
+    I: Eq + Clone + Hash,
+    L: IntoIterator<Item = R>,
+    R: RankedSearchEntry<Id = I>,
+    F: Fn(&[Rank]) -> Score,
+{
+    let mut map: HashMap<I, SmallVec<[_; 4]>> = HashMap::new();
+
+    for r in results {
+        if let Some(v) = map.get_mut(r.id()) {
+            v.push(r.rank());
+        } else {
+            map.insert(r.id().clone(), smallvec![r.rank()]);
+        }
+    }
+
+    let mut flat: Vec<_> = map
+        .into_iter()
+        .map(|(id, ranks)| {
+            // score fusion happens here
+            let score = fuser(&ranks);
+            EntryInfo { id, score }
+        })
+        .collect();
+
+    flat.sort_unstable_by_key(|e| -e.score);
+    flat
+}
+
+/// Combines multiple ranked results with a fusion algorithm based on both rank
+/// and score.
+pub fn fuse_hybrid<I, L, R, F>(results: L, fuser: F) -> Vec<EntryInfo<I>>
+where
+    I: Eq + Clone + Hash,
+    L: IntoIterator<Item = R>,
+    R: RankedSearchEntry<Id = I>,
+    F: Fn(&[(Rank, Score)]) -> Score,
+{
+    let mut map: HashMap<I, SmallVec<[_; 4]>> = HashMap::new();
+
+    for r in results {
+        if let Some(v) = map.get_mut(r.id()) {
+            v.push((r.rank(), r.score()));
+        } else {
+            map.insert(r.id().clone(), smallvec![(r.rank(), r.score())]);
+        }
+    }
+
+    let mut flat: Vec<_> = map
+        .into_iter()
+        .map(|(id, scores)| {
+            // score fusion happens here
+            let score = fuser(&scores);
+            EntryInfo { id, score }
+        })
+        .collect();
+
+    flat.sort_unstable_by_key(|e| -e.score);
+    flat
+}
 
 #[cfg(test)]
 mod tests {
-    use crate::score;
     use super::*;
+    use crate::score;
 
     #[test]
     fn test_comb_max() {
@@ -103,7 +165,6 @@ mod tests {
             53.5
         )
     }
-
 
     #[test]
     fn test_comb_mnz() {
