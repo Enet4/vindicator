@@ -58,11 +58,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let list = list.into_iter()
                     .enumerate()
                     .map(|(i, e)| trec::TrecEntry {
-                        qid: qid,
+                        qid,
                         docno: *e.id(),
                         rank: i as Rank,
                         score: e.score(),
-                        runid: runid,
+                        runid,
                     });
 
                 // create output stream
