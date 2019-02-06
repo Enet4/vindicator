@@ -1,6 +1,6 @@
 //! Late fusion algorithms.
 
-use crate::{EntryInfo, Rank, RankedEntryInfo, RankedSearchEntry, Score, SearchEntry};
+use crate::{EntryInfo, Rank, RankedSearchEntry, Score, SearchEntry, score};
 use noisy_float::prelude::*;
 use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
@@ -25,6 +25,11 @@ pub fn comb_sum(scores: &[Score]) -> Score {
 /// Returns the sum of all scores, multiplied by the number of scores.
 pub fn comb_mnz(scores: &[Score]) -> Score {
     n32(scores.len() as f32) * comb_sum(scores)
+}
+
+/// Reciprocal rank fusion algorithm
+pub fn rrf(ranks: &[Rank]) -> Score {
+    ranks.into_iter().map(|&r| 1. / (1. + r as f32)).map(score).sum()
 }
 
 /// Combines two lists of scored results with a score-based fusion algorithm.
