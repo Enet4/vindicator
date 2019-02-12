@@ -17,6 +17,12 @@ pub enum App {
         /// Result fusion algorithm
         #[structopt(short = "f")]
         fuser: String,
+        /// The output's query name
+        #[structopt(short = "q", long = "qid", default_value="fusion")]
+        qid: String,
+        /// The output's run name
+        #[structopt(long = "runid", default_value="vindicated")]
+        runid: String,
         /// Output file (print to stdout by default)
         #[structopt(parse(from_os_str), short = "o")]
         output: Option<PathBuf>,
@@ -27,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::from_args();
 
     match app {
-        App::Merge { files, fuser, output, .. } => {
+        App::Merge { files, fuser, output, qid, runid } => {
             let files_data = files
                 .iter()
                 .map(read_to_string)
@@ -53,16 +59,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 },
             } {
                 // transform results into new list
-                let qid = "fusion";
-                let runid = "0";
                 let list = list.into_iter()
                     .enumerate()
                     .map(|(i, e)| trec::TrecEntry {
-                        qid,
+                        qid: &qid,
                         docno: *e.id(),
                         rank: i as Rank,
                         score: e.score(),
-                        runid,
+                        runid: &runid,
                     });
 
                 // create output stream
